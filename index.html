@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="gu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>SO Estimate Library</title>
+<style>
+:root { --bg:#f0f4f8; --ink:#16213e; --acc:#0f3460; --red:#e94560; --dash:#c45c26; }
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html, body { min-height:100%; }
+body { font-family: "Noto Sans Gujarati", system-ui, -apple-system, Arial, sans-serif; background:var(--bg); color:#1a1a2e; }
+.header-bar { background:var(--acc); color:#fff; padding:16px 16px calc(12px + env(safe-area-inset-top)); text-align:center; position:sticky; top:0; z-index:10; }
+.header-bar h1 { color:#fff; font-size:18px; }
+.header-bar p { color:#a8c5e2; font-size:12px; margin-top:4px; }
+.page { display:none; padding:16px 16px calc(24px + env(safe-area-inset-bottom)); max-width:640px; margin:0 auto; }
+.page.active { display:block; }
+h1 { font-size:20px; margin-bottom:8px; color:var(--ink); line-height:1.35; }
+.subtitle { font-size:14px; color:#555; margin-bottom:20px; line-height:1.5; }
+.card { background:#fff; border-radius:12px; padding:16px; margin-bottom:10px; box-shadow:0 2px 8px rgba(0,0,0,.08); cursor:pointer; }
+.card h3 { font-size:17px; color:var(--ink); }
+.card p { font-size:13px; color:#666; margin-top:4px; }
+.card.dashed { border:2px dashed var(--dash); background:#fff8f3; }
+.card.dashed h3 { color:var(--dash); }
+.btn { display:block; width:100%; padding:16px; background:var(--acc); color:#fff; border:none; border-radius:10px; font-size:16px; cursor:pointer; margin-top:12px; }
+.btn.red { background:var(--red); }
+.back { background:none; border:none; color:var(--acc); font-size:15px; cursor:pointer; margin-bottom:12px; padding:8px 0; }
+.work-box { background:#fff; border:2px dashed #ccc; border-radius:8px; padding:12px; margin-bottom:10px; }
+.work-box label { font-size:14px; color:#333; display:block; margin-bottom:6px; }
+.work-box input, .field input { width:100%; padding:12px; border:1px solid #ddd; border-radius:6px; font-size:16px; }
+.field { background:#fff; border-radius:8px; padding:12px; margin-bottom:10px; }
+.field label { font-size:14px; color:#333; display:block; margin-bottom:6px; font-weight:600; }
+</style>
+</head>
+<body>
+<div class="header-bar">
+  <h1>SO Estimate Library</h1>
+  <p>ગુજરાતના SO માટે એક સરળ એસ્ટિમેટ લાઇબ્રેરી</p>
+</div>
+
+<div class="page active" id="page-welcome">
+  <h1>ગુજરાતના SO માટે એક સરળ એસ્ટિમેટ લાઇબ્રેરી</h1>
+  <p class="subtitle">જિલ્લા, તાલુકા અને કામ પસંદ કરો, એસ્ટિમેટ તૈયાર. બીજા તાલુકાના SO પણ ઍક્સેસ કરી શકે.</p>
+  <button class="btn" onclick="goTo('page-district')">શરૂ કરો</button>
+</div>
+
+<div class="page" id="page-district">
+  <button class="back" onclick="goTo('page-welcome')">← પાછા</button>
+  <h1>જિલ્લો પસંદ કરો</h1>
+  <div id="district-list"></div>
+</div>
+
+<div class="page" id="page-taluka">
+  <button class="back" onclick="goTo('page-district')">← પાછા</button>
+  <h1 id="taluka-title">તાલુકો પસંદ કરો</h1>
+  <div id="taluka-list"></div>
+</div>
+
+<div class="page" id="page-new">
+  <button class="back" id="new-back" onclick="goTo('page-district')">← પાછા</button>
+  <h1 id="new-title">નવો જિલ્લો / તાલુકો</h1>
+  <p class="subtitle" id="new-sub">તમારું નામ લખો, પછી સાત કામના ખાલી બોક્સ ખુલશે.</p>
+  <div class="field" id="field-district">
+    <label>જિલ્લાનું નામ</label>
+    <input type="text" id="new-district" placeholder="જેમ કે ખેડા">
+  </div>
+  <div class="field">
+    <label>તાલુકાનું નામ</label>
+    <input type="text" id="new-taluka" placeholder="જેમ કે ઠાસરા">
+  </div>
+  <button class="btn" onclick="openEmptyWorks()">આગળ — ૭ કામ લખો</button>
+</div>
+
+<div class="page" id="page-works">
+  <button class="back" onclick="goTo('page-taluka')">← પાછા</button>
+  <h1 id="works-title">કામ પસંદ કરો</h1>
+  <p class="subtitle">સાત બોક્સ — જે કામ હોય તે ભરો, ખાલી રાખી શકો.</p>
+  <div id="works-list"></div>
+  <button class="btn" onclick="submitWorks()">એસ્ટિમેટ તૈયાર કરો</button>
+</div>
+
+<script>
+const DATA = {"Kheda": {"kathlal": ["CC Road", "Paver Block", "Gutter line", "Pipe line", "Compound wall", "MDM shed", "Water tank"], "Kathlal": ["CC Road", "Paver Block", "Gutter line", "Pipe line", "Compound wall", "Water tank", "Bore pumping"], "Nadiad": ["CC Road"], "Galteshwar": ["CC Road", "Paver Block", "Gutter line", "Pipe line", "Compound wall", "Bore pumping", "Pump house"], "Kapadwanj": ["CC Road", "Paver Block", "Gutter line", "Compound wall", "Flood protection wall", "MDM shed", "Water tank"], "Matar": ["CC Road", "Paver Block", "Gutter line", "Pipe line", "Compound wall", "MDM shed", "Bore pumping"]}, "Banaskantha": {"Suigam": ["CC Road", "Paver Block", "Gutter line", "Pipe line", "Compound wall", "Flood protection wall", "MDM shed"], "Danta": ["CC Road", "Paver Block", "Gutter line", "Pipe line", "Compound wall", "Flood protection wall", "MDM shed"], "Bhabhar (pratiniyukti)": ["Paver Block", "Gutter line", "Pipe line", "Compound wall", "Flood protection wall", "Havado", "Community hall"]}, "Panchmahal": {"Kalol": ["CC Road", "Paver Block", "Gutter line", "Compound wall", "MDM shed", "Check dam", "Community hall"], "Shahera": ["CC Road", "Paver Block", "Gutter line", "Compound wall", "MDM shed", "Hand pump", "Check dam"]}, "Junagadh": {"Keshod": ["CC Road", "Paver Block", "Gutter line", "Flood protection wall", "MDM shed", "Water tank", "Pump house"], "Maliya Hatina": ["Gutter line", "Pipe line", "Compound wall", "Flood protection wall", "MDM shed", "Havado", "Check dam"], "Junagadh": ["CC Road", "Paver Block", "Gutter line", "Pipe line", "Compound wall", "Flood protection wall", "MDM shed"], "Vanthali": ["CC Road", "Paver Block", "Gutter line", "Pipe line", "Compound wall", "Flood protection wall", "MDM shed"]}, "Vadodara": {"Waghodia": ["CC Road", "Paver Block", "Gutter line", "Pipe line", "Compound wall", "Water tank", "Hand pump"], "Savli": ["CC Road", "Paver Block", "Gutter line", "Pipe line", "Compound wall", "Flood protection wall", "MDM shed"], "Desar": ["CC Road", "Paver Block", "Gutter line", "Pipe line", "Flood protection wall", "MDM shed", "Bore pumping"]}, "Aravalli": {"Bayad": ["CC Road", "Paver Block", "Gutter line", "Pipe line", "Compound wall", "Flood protection wall", "MDM shed"]}, "Anand": {"Anand": ["CC Road", "Paver Block", "Gutter line", "Pipe line", "Compound wall", "Flood protection wall", "Bore pumping"], "Petlad": ["CC Road", "Paver Block", "Gutter line", "Pipe line", "MDM shed", "Water tank", "Bore pumping"], "Anklav": ["CC Road", "Paver Block", "Gutter line", "Pipe line", "MDM shed", "Water tank", "Bore pumping"], "Sojitra": ["CC Road", "Paver Block", "Gutter line", "Pipe line", "Compound wall", "Flood protection wall", "MDM shed"], "Borsad": ["CC Road", "Paver Block", "Gutter line", "Pipe line", "Compound wall", "MDM shed", "Bore pumping"]}, "Tapi": {"Uchchhal": ["CC Road", "Paver Block", "Gutter line", "Compound wall", "MDM shed", "Water tank", "Bore pumping"]}, "Bhavnagar": {"Ghogha": ["Flood protection wall", "MDM shed", "Water tank", "Havado", "Check dam", "Community hall", "Library"], "Bhavnagar": ["CC Road", "Paver Block", "Gutter line", "Compound wall", "Flood protection wall", "MDM shed", "Community hall"], "Sihor": ["CC Road", "Paver Block", "Gutter line", "Pipe line", "Compound wall", "Flood protection wall", "MDM shed"], "Umrala": ["CC Road", "Paver Block", "Gutter line", "Pipe line", "Compound wall", "Flood protection wall", "MDM shed"]}, "Rajkot": {"Lodhika": ["CC Road", "Paver Block", "Gutter line", "Pipe line", "Compound wall", "Flood protection wall", "MDM shed"], "Jasdan": ["CC Road", "Paver Block", "Gutter line", "Pipe line", "Compound wall", "Flood protection wall", "MDM shed"], "Jamkandorna": ["CC Road", "Paver Block", "Gutter line", "Pipe line", "Compound wall", "Flood protection wall", "MDM shed"], "VINCHHIYA": ["CC Road", "Paver Block", "Gutter line", "Pipe line", "Compound wall", "Flood protection wall", "Water tank"], "PADDHARI": ["CC Road", "Paver Block", "Gutter line", "Pipe line", "Compound wall", "Flood protection wall", "Havado"]}, "Botad": {"Gadhada": ["CC Road", "Paver Block", "Gutter line", "Pipe line", "Compound wall", "Flood protection wall", "MDM shed"]}, "Amreli": {"Kunkavav vadiya": ["CC Road", "Paver Block", "Gutter line", "Pipe line", "Compound wall", "Flood protection wall", "MDM shed"], "ખાંભા": ["CC Road", "Paver Block", "Gutter line", "Pipe line", "Compound wall", "Bore pumping", "Havado"], "Babra": ["CC Road", "Paver Block", "Gutter line", "Pipe line", "Compound wall", "Flood protection wall", "Water tank"]}, "Surendranagar": {"Limbdi": ["CC Road", "Paver Block", "Gutter line", "Compound wall", "Flood protection wall", "MDM shed", "Check dam"]}, "Valsad": {"Valsad": ["Paver Block", "Gutter line", "Pipe line", "Compound wall", "MDM shed", "Bore pumping", "Hand pump"], "Kaparada": ["Paver Block", "Gutter line", "Compound wall", "MDM shed", "Water tank", "Bore pumping"]}, "Mehsana": {"Visnagar": ["CC Road", "Paver Block", "Gutter line", "Pipe line", "Compound wall", "Flood protection wall", "Havado"], "Bechraji": ["CC Road", "Paver Block", "Gutter line", "Pipe line", "Compound wall", "Flood protection wall", "MDM shed"], "Kadi": ["CC Road", "Paver Block", "Gutter line", "Pipe line", "Compound wall", "Flood protection wall", "Water tank"], "Vadnagar": ["CC Road", "Paver Block", "Gutter line", "Pipe line", "Compound wall", "Pump house", "Havado"], "Mahesana": ["CC Road", "Paver Block", "Gutter line", "Pipe line", "Compound wall", "Flood protection wall", "Havado"]}, "Jamnagar": {"Kalavad": ["CC Road", "Paver Block", "Gutter line", "Pipe line", "Compound wall", "Flood protection wall", "MDM shed"]}, "Devbhumi Dwarka": {"Bhanvad": ["CC Road", "Paver Block", "Gutter line", "Pipe line", "Compound wall", "Flood protection wall", "MDM shed"]}, "Porbandar": {"Ranavav": ["CC Road", "Paver Block", "Gutter line", "Pipe line", "Flood protection wall", "MDM shed", "Havado"]}, "Surat": {"Kamrej": ["Gutter line", "Pipe line", "Compound wall", "MDM shed", "Water tank", "Havado", "Community hall"], "Areth": ["CC Road", "Paver Block", "Gutter line", "Pipe line", "Compound wall", "MDM shed", "Bore pumping"], "Mangrol": ["CC Road", "Paver Block", "Gutter line", "Pipe line", "Compound wall", "MDM shed", "Bore pumping"]}, "Gir Somnath": {"Sutrapada": ["CC Road", "Paver Block", "Gutter line", "Pipe line", "Compound wall", "Flood protection wall", "Water tank"], "Gir Gadhada": ["CC Road", "Paver Block", "Gutter line", "Pipe line", "Compound wall", "Havado", "Community hall"]}, "Narmada": {"Garudeshwar": ["CC Road", "Paver Block", "Gutter line", "Compound wall", "Flood protection wall", "MDM shed", "Hand pump"]}, "Ahmedabad": {"Daskroi": ["CC Road", "Paver Block", "Gutter line", "Pipe line", "Compound wall", "Flood protection wall", "MDM shed"], "Sanand": ["CC Road", "Paver Block", "Gutter line", "Compound wall", "Flood protection wall", "Community hall"]}, "Patan": {"Sami": ["CC Road", "Paver Block", "Gutter line", "Pipe line", "Compound wall", "Flood protection wall", "Community hall"], "PATAN": ["CC Road", "Paver Block", "Flood protection wall", "Community hall", "Library"]}};
+
+let selectedDistrict = '';
+let selectedTaluka = '';
+let newMode = ''; // 'district' | 'taluka'
+
+function goTo(pageId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(pageId).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function renderSevenBoxes(prefill) {
+  const wList = document.getElementById('works-list');
+  wList.innerHTML = '';
+  const works = prefill || [];
+  for (let i = 0; i < 7; i++) {
+    const box = document.createElement('div');
+    box.className = 'work-box';
+    const val = works[i] || '';
+    box.innerHTML = '<label>કામ ' + (i+1) + '</label><input type="text" value="' + String(val).replace(/"/g,'&quot;') + '" placeholder="કામનું નામ — ખાલી રાખી શકો">';
+    wList.appendChild(box);
+  }
+}
+
+const distList = document.getElementById('district-list');
+Object.keys(DATA).sort().forEach(d => {
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = '<h3>' + d + '</h3><p>' + Object.keys(DATA[d]).length + ' તાલુકા</p>';
+  card.onclick = () => selectDistrict(d);
+  distList.appendChild(card);
+});
+
+const missingDist = document.createElement('div');
+missingDist.className = 'card dashed';
+missingDist.innerHTML = '<h3>મારો જિલ્લો અહીં નથી</h3><p>નવો જિલ્લો અને તાલુકો લખો, પછી ૭ કામ ભરો</p>';
+missingDist.onclick = () => openNewForm('district');
+distList.appendChild(missingDist);
+
+function selectDistrict(d) {
+  selectedDistrict = d;
+  document.getElementById('taluka-title').textContent = d + ' — તાલુકો પસંદ કરો';
+  const talList = document.getElementById('taluka-list');
+  talList.innerHTML = '';
+  Object.keys(DATA[d]).sort().forEach(t => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = '<h3>' + t + '</h3><p>' + DATA[d][t].length + ' કામ</p>';
+    card.onclick = () => selectTaluka(t);
+    talList.appendChild(card);
+  });
+  const extra = document.createElement('div');
+  extra.className = 'card dashed';
+  extra.innerHTML = '<h3>મારો તાલુકો અહીં નથી</h3><p>પોતાનો તાલુકો લખો, પછી ૭ કામ ભરો</p>';
+  extra.onclick = () => openNewForm('taluka');
+  talList.appendChild(extra);
+  goTo('page-taluka');
+}
+
+function openNewForm(mode) {
+  newMode = mode;
+  document.getElementById('new-district').value = mode === 'taluka' ? selectedDistrict : '';
+  document.getElementById('new-taluka').value = '';
+  document.getElementById('field-district').style.display = mode === 'district' ? 'block' : 'none';
+  if (mode === 'district') {
+    document.getElementById('new-title').textContent = 'નવો જિલ્લો ઉમેરો';
+    document.getElementById('new-sub').textContent = 'જિલ્લો અને તાલુકો લખો. પછી સાત ખાલી કામના બોક્સ ખુલશે.';
+    document.getElementById('new-back').onclick = () => goTo('page-district');
+  } else {
+    document.getElementById('new-title').textContent = selectedDistrict + ' — નવો તાલુકો';
+    document.getElementById('new-sub').textContent = 'તમારો તાલુકો લખો. પછી સાત ખાલી કામના બોક્સ ખુલશે.';
+    document.getElementById('new-back').onclick = () => goTo('page-taluka');
+  }
+  goTo('page-new');
+}
+
+function openEmptyWorks() {
+  const d = (document.getElementById('new-district').value || selectedDistrict || '').trim();
+  const t = document.getElementById('new-taluka').value.trim();
+  if (newMode === 'district' && !d) { alert('જિલ્લાનું નામ લખો'); return; }
+  if (!t) { alert('તાલુકાનું નામ લખો'); return; }
+  selectedDistrict = d;
+  selectedTaluka = t;
+  document.getElementById('works-title').textContent = d + ' / ' + t + ' — ૭ કામ લખો';
+  renderSevenBoxes([]);
+  document.querySelector('#page-works .back').onclick = () => goTo('page-new');
+  goTo('page-works');
+}
+
+function selectTaluka(t) {
+  selectedTaluka = t;
+  document.getElementById('works-title').textContent = selectedDistrict + ' / ' + t + ' — કામ';
+  const works = (DATA[selectedDistrict] && DATA[selectedDistrict][t]) || [];
+  renderSevenBoxes(works);
+  document.querySelector('#page-works .back').onclick = () => goTo('page-taluka');
+  goTo('page-works');
+}
+
+function submitWorks() {
+  const inputs = document.querySelectorAll('#works-list input');
+  const filled = [];
+  inputs.forEach(inp => { if (inp.value.trim()) filled.push(inp.value.trim()); });
+  alert('એસ્ટિમેટ તૈયાર!\\n\\nજિલ્લો: ' + selectedDistrict + '\\nતાલુકો: ' + selectedTaluka + '\\nકામ: ' + (filled.join(', ') || '(ખાલી)'));
+}
+</script>
+</body>
+</html>
