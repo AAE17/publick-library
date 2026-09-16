@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: aso-estimate
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: aso-estimate-db
+          property: connectionString
+
+databases:
+  - name: aso-estimate-db
+    plan: free
