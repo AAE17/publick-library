@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="gu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ASO Library — Admin</title>
+<style>
+body { font-family: system-ui, Arial, sans-serif; background:#f0f4f8; margin:0; color:#16213e; }
+header { background:#0f3460; color:#fff; padding:16px; }
+.wrap { max-width:960px; margin:0 auto; padding:16px; }
+table { width:100%; border-collapse:collapse; background:#fff; }
+th, td { border:1px solid #dde; padding:8px; text-align:left; font-size:14px; vertical-align:top; }
+th { background:#e8eef5; }
+</style>
+</head>
+<body>
+<header><h1>ASO Estimate — બધી એન્ટ્રી</h1></header>
+<div class="wrap">
+<p id="meta">લોડ થઈ રહ્યું...</p>
+<table>
+<thead><tr><th>ID</th><th>જિલ્લો</th><th>તાલુકો</th><th>કામ</th><th>સમય</th></tr></thead>
+<tbody id="rows"></tbody>
+</table>
+</div>
+<script>
+fetch('/api/formats').then(r => r.json()).then(rows => {
+  document.getElementById('meta').textContent = rows.length + ' એન્ટ્રી';
+  const tb = document.getElementById('rows');
+  rows.forEach(r => {
+    const tr = document.createElement('tr');
+    const works = Array.isArray(r.works) ? r.works.join(', ') : '';
+    tr.innerHTML = '<td>' + r.id + '</td><td>' + r.district + '</td><td>' + r.taluka + '</td><td>' + works + '</td><td>' + (r.created_at || '') + '</td>';
+    tb.appendChild(tr);
+  });
+}).catch(() => {
+  document.getElementById('meta').textContent = 'API નથી મળ્યું';
+});
+</script>
+</body>
+</html>
