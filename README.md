@@ -17,7 +17,7 @@ Without `DATABASE_URL` data is saved in `data/formats.json`.
 
 ## Render (same workspace as Copilot)
 
-1. New GitHub repo — upload this `aso-estimate` folder.
+1. New GitHub repo — upload this `so-estimate` folder.
 2. Render → New Web Service → that repo.
 3. Build: `npm install`
 4. Start: `npm start`
